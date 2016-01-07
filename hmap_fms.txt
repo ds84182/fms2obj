@@ -1,0 +1,143 @@
+Harvest Moon: Animal Parade - FMS reverse engineering
+
+pBIN Format:
+	
+	Notes:
+		Yes more containers.
+		
+	File Header Magic: "pBIN"
+	12 bytes: Unknown
+	4 bytes: Details Pointer (from beginning of file)
+	4 bytes: Number of details
+	
+	..for every detail..
+	4 bytes: Size
+	4 bytes: Offset
+	4 bytes: Type ("FMS", "TEX", "MOT")
+
+
+
+FIPAFMS format:
+
+	Notes:
+		This is some sort of container for multiple files, kinda like NARC files.
+		THIS HEADER IS COMPLETELY LITTLE ENDIAN? WHY? I DON"T KNOW.
+
+	File Header Magic: 46 49 50 41 46 4D 53 00 ("FIPAFMS", null terminated)
+	8 bytes: Unknown, maybe version data?
+	4 bytes: Number of contained files
+	12 bytes: Unknown, padding?
+	
+	..for every contained file..
+	4 bytes: File size
+	4 bytes: File pointer (relative to end of file data thing)
+	8 bytes: Unknown, padding?
+	
+	[[START OF FILE DATA]]
+
+
+
+FMES Format:
+
+	4 bytes: File Magic: "FMES"
+	8 bytes: Version?
+	4 bytes: Unknown
+	4 bytes: Amount of mesh groups
+	20 bytes: unknown
+	(Number of mesh groups)*4 bytes: Mesh group pointers, relative to the start of the mesh groups
+	4 bytes: Vertices Per Group (Usually 3, triangles) (Untested)
+	4 bytes: Vertex Group Count
+	24 bytes: Bounding Box in Floats (x1, y1, z1, x2, y2, z2)
+	4 bytes: Offset from the number of vertices per group to the Position Data
+	4 bytes: Offset from the number of vertices per group to the Normal Data
+	4 bytes: Offset from the number of vertices per group to the Texture Data
+	4 bytes: Offset from the number of vertices per group to the Color Data
+	32 bytes: Unknown, possibly object attributes
+	2 bytes: Either Material or Texture
+	138 bytes: Unknown, possibly object attributes
+	4 bytes: Number of indicies represented the trailing data, usually taking up the second half
+	...for every index...
+	2 bytes: Index position
+	2 bytes: Index normal
+	2 bytes: Index texture, if used
+	2 bytes: Index color, if used
+
+	At Position Data:
+	(Max position indices)*4*3 bytes: All are floats, arranged in x, y, z
+
+	At Normal Data:
+	(Max normal indices)*4*3 bytes: All are floats, arranged in x, y, z
+
+	At Texture Data:
+	(Max texture indices)*4*2 bytes: All are floats, arranged in u, v
+
+	At Color Data:
+	(Max color indices)*4 bytes: 32-bit color
+
+
+
+FTEX Format:
+	
+	8 bytes: File Magic: "FIPAFTEX"
+	8 bytes: Unknown
+	1 byte: Number of attributes
+	15 bytes: Alignment
+	(Number of attributes)*16: Attributes
+	4 bytes: 00 20 AF 30 (Texture Magic?)
+	4 bytes: Unknown, always 1
+	4 bytes: Unknown, always 12
+	4 bytes: Unknown, always 20
+	4 bytes: Unknown, always 0
+	2 bytes: Texture Width
+	2 bytes: Texture Height
+	4 bytes: Texture Format (???)
+	4 bytes: Unknown, always 64
+	32 bytes: Unknown
+	The rest of the data...: Texture data, size depends on texture format
+
+FMAT Format:
+
+	4 bytes: File Magic: "FMAT"
+	12 bytes: Unknown
+	4 bytes: Number of materials (seems to corelate with number of texture too)
+	20 bytes: Unknown
+	2 bytes: Unknown, seems to be the same (or one byte off) of the number of materials (also the base for material data pointers)
+	2 bytes: Unknown, seems to be the same (or one byte off) of the number of materials
+	(Number of materials)*2 bytes: Textures for that material
+	..if number of materials is odd then... 2 bytes: Padding
+	(Number of materials)*4 bytes: Pointer to specific material data
+	
+	At Material Data:
+		4 bytes: Unknown, maybe flags or an identifier? Seems to always be (00 01 00 0A)
+		84 bytes: Unknown, probably material data passed directly to GX
+
+FNTD Format:
+
+	4 bytes: File Magic: "FNTD"
+	12 bytes: Unknown
+	4 bytes: Number of descriptions
+	20 bytes: Unknown
+	
+	For every description:
+		1 byte: Type (0 = bone, 1 = texture, 2 = texture?, 3 = material, 4 = model)
+		1 byte: Unknown
+		2 bytes: Index (for specific type)
+		4 bytes: Unknown
+		4 bytes: String offset to string table
+	
+	String Data:
+		Directly after data. Not structured.
+
+FNDL Format:
+
+	4 bytes: File magic: "FNDL"
+	12 bytes: Unknown
+	4 bytes: Number of bones
+	20 bytes: Unknown
+	
+	For every bone:
+		2 bytes: Multiple Values (x >> 5 == parent index)
+		2 bytes: Unknown
+		12 bytes: Position in floats (X, Y, Z) relative to parent
+		12 bytes: Unknown, always 0
+		12 bytes: Unknown, possibly weights?
